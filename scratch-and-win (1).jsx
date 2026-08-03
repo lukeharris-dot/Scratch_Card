@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 /* ---------------------------------------------------------
-   Prize definitions
+   Between The Bridges — scratch card promo
+   Waterloo / Southbank · dancing, music, riverside events
 --------------------------------------------------------- */
 const PRIZES = {
-  drink: { label: "A free drink", icon: "🍸" },
-  tickets: { label: "2 event tickets", icon: "🎟️" },
-  photobooth: { label: "A complimentary photobooth session", icon: "📸" },
-  noWin: { label: "Sorry, you haven't won this time", icon: "✕" },
+  drink: { label: "A free drink", icon: "stein" },
+  tickets: { label: "2 tickets to a show", icon: "ticket" },
+  photobooth: { label: "A free photobooth session", icon: "camera" },
+  noWin: { label: "No luck this time", icon: "cross" },
 };
 const PRIZE_ORDER = ["drink", "tickets", "photobooth"];
 const PRIZE_ICON_LIST = PRIZE_ORDER.map((k) => PRIZES[k].icon);
-const DECORATIVE_ICONS = ["🍺", "🥂", "🎪", "🎡", "🎶", "✨", "🌉", "🎈", "🍭", "🎷", "🥳", "🍾", "BTB"];
+const DECORATIVE_ICONS = ["disco", "note", "cocktail", "speaker", "mic", "wheel", "bolt"];
 const ADMIN_PASSWORD = "promo2026";
+
+const TICKER = "Live music · Late DJs · Riverside dancing · Corporate events · Private hire · Waterloo";
 
 /* ---------------------------------------------------------
    Helpers
@@ -86,16 +89,124 @@ function buildGrid(prizeKey) {
 }
 
 /* ---------------------------------------------------------
-   Scratch card canvas
+   Icon set — music / dancing / riverside
+--------------------------------------------------------- */
+function GridIcon({ name, size = 46 }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 40 40",
+    fill: "none",
+    strokeWidth: 2.3,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+  const gold = "#B87A00";
+  const pink = "#D4156B";
+  const cyan = "#0A8F85";
+  const violet = "#5F35C4";
+  const grey = "#7E75A0";
+  switch (name) {
+    case "stein":
+      return (
+        <svg {...common} stroke={gold}>
+          <rect x="8" y="12" width="16" height="21" rx="2" />
+          <path d="M24 17h5a4 4 0 0 1 0 9h-5" />
+          <path d="M8 18h16" />
+          <path d="M12 9V5M17 8V4M22 9V5" />
+        </svg>
+      );
+    case "ticket":
+      return (
+        <svg {...common} stroke={pink}>
+          <rect x="4" y="13" width="32" height="15" rx="3" />
+          <path d="M20 13v15" strokeDasharray="2 3" />
+          <circle cx="11" cy="20.5" r="1.6" />
+          <circle cx="29" cy="20.5" r="1.6" />
+        </svg>
+      );
+    case "camera":
+      return (
+        <svg {...common} stroke={violet}>
+          <rect x="5" y="13" width="30" height="19" rx="3" />
+          <circle cx="20" cy="22" r="6" />
+          <rect x="14" y="8" width="9" height="5" rx="1" />
+        </svg>
+      );
+    case "disco":
+      return (
+        <svg {...common} stroke={cyan}>
+          <circle cx="20" cy="23" r="11" />
+          <path d="M9 23h22M20 12v22M12 15l16 16M28 15L12 31" />
+          <path d="M20 12V4" />
+        </svg>
+      );
+    case "note":
+      return (
+        <svg {...common} stroke={pink}>
+          <circle cx="13" cy="29" r="4.5" />
+          <path d="M17.5 29V11l14-3v18" />
+          <circle cx="27" cy="26" r="4.5" />
+        </svg>
+      );
+    case "cocktail":
+      return (
+        <svg {...common} stroke={gold}>
+          <path d="M8 10h24L20 24z" />
+          <path d="M20 24v9M13 33h14" />
+          <circle cx="27" cy="12" r="2" />
+        </svg>
+      );
+    case "speaker":
+      return (
+        <svg {...common} stroke={violet}>
+          <rect x="11" y="5" width="18" height="30" rx="3" />
+          <circle cx="20" cy="25" r="6" />
+          <circle cx="20" cy="12" r="2.6" />
+        </svg>
+      );
+    case "mic":
+      return (
+        <svg {...common} stroke={cyan}>
+          <rect x="15" y="5" width="10" height="16" rx="5" />
+          <path d="M10 19a10 10 0 0 0 20 0M20 29v6M14 35h12" />
+        </svg>
+      );
+    case "wheel":
+      return (
+        <svg {...common} stroke={pink}>
+          <circle cx="20" cy="18" r="12" />
+          <path d="M20 6v24M8 18h24M11.5 9.5l17 17M28.5 9.5l-17 17" />
+          <path d="M17 34h6" />
+        </svg>
+      );
+    case "bolt":
+      return (
+        <svg {...common} stroke={gold}>
+          <path d="M23 4 10 23h8l-1.5 13L31 17h-9z" />
+        </svg>
+      );
+    case "cross":
+      return (
+        <svg {...common} stroke={grey}>
+          <path d="M12 12l16 16M28 12L12 28" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+/* ---------------------------------------------------------
+   Scratch panel
 --------------------------------------------------------- */
 function ScratchPanel({ prizeKey, onRevealed }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const scratchingRef = useRef(false);
   const revealedRef = useRef(false);
-  const [justRevealed, setJustRevealed] = useState(false);
-  const W = 300,
-    H = 260;
+  const W = 600,
+    H = 500;
 
   const symbols = useMemo(() => buildGrid(prizeKey), [prizeKey]);
 
@@ -106,35 +217,34 @@ function ScratchPanel({ prizeKey, onRevealed }) {
     canvas.height = H;
 
     const grad = ctx.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, "#ffcf5c");
-    grad.addColorStop(0.5, "#ffb400");
-    grad.addColorStop(1, "#c47f00");
+    grad.addColorStop(0, "#FFD873");
+    grad.addColorStop(0.45, "#FFB01F");
+    grad.addColorStop(1, "#C97C05");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    ctx.strokeStyle = "rgba(255,255,255,0.18)";
-    ctx.lineWidth = 2;
-    for (let x = -H; x < W; x += 14) {
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth = 4;
+    for (let x = -H; x < W; x += 26) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x + H, H);
       ctx.stroke();
     }
 
-    ctx.fillStyle = "rgba(22,24,41,0.55)";
-    ctx.font = "700 15px 'Bebas Neue', sans-serif";
+    ctx.fillStyle = "rgba(11,7,20,0.55)";
+    ctx.font = "700 34px 'Anton', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("SCRATCH TO REVEAL", W / 2, H / 2);
+    ctx.fillText("SCRATCH HERE", W / 2, H / 2);
   }, []);
 
   const pctCleared = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvasRef.current.getContext("2d");
     const data = ctx.getImageData(0, 0, W, H).data;
     let cleared = 0,
       total = 0;
-    for (let i = 3; i < data.length; i += 4 * 6) {
+    for (let i = 3; i < data.length; i += 4 * 40) {
       total++;
       if (data[i] < 40) cleared++;
     }
@@ -151,16 +261,15 @@ function ScratchPanel({ prizeKey, onRevealed }) {
       const ctx = canvas.getContext("2d");
       ctx.globalCompositeOperation = "destination-out";
       ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.arc(x, y, 42, 0, Math.PI * 2);
       ctx.fill();
 
-      if (pctCleared() > 0.88) {
+      if (pctCleared() > 0.62) {
         revealedRef.current = true;
-        canvas.style.transition = "opacity 1s ease";
+        canvas.style.transition = "opacity 0.7s ease";
         canvas.style.opacity = "0";
         canvas.style.pointerEvents = "none";
-        setJustRevealed(true);
-        setTimeout(() => onRevealed(), 2600);
+        setTimeout(() => onRevealed(), 1600);
       }
     },
     [onRevealed, pctCleared]
@@ -200,145 +309,79 @@ function ScratchPanel({ prizeKey, onRevealed }) {
 
   return (
     <div ref={containerRef} className="scratchWrap">
-      <div className="symbolsRow">
+      <div className="symbolsGrid">
         {symbols.map((s, i) => (
           <div className="symbolCell" key={i}>
-            {s === "BTB" ? <span className="brandBadge">BTB</span> : s}
+            <GridIcon name={s} />
           </div>
         ))}
       </div>
       <canvas ref={canvasRef} className="scratchCanvas" />
-      {justRevealed && <div className="revealingTag">Revealing your result…</div>}
     </div>
   );
 }
 
 /* ---------------------------------------------------------
-   Ticket frame wrapper (shared visual identity)
+   Chrome: ticker, lights, disco ball, equaliser
 --------------------------------------------------------- */
-const BUNTING_COLORS = ["var(--tube-red)", "var(--gold)", "var(--coral)", "var(--teal)", "var(--gold)"];
-
-function BackgroundArt() {
-  const spokes = Array.from({ length: 12 }).map((_, i) => {
-    const angle = (i / 12) * Math.PI * 2;
-    return {
-      x1: 100 + Math.cos(angle) * 14,
-      y1: 100 + Math.sin(angle) * 14,
-      x2: 100 + Math.cos(angle) * 82,
-      y2: 100 + Math.sin(angle) * 82,
-    };
-  });
+function Ticker() {
   return (
-    <>
-      <svg className="bgArt bgArtEye" viewBox="0 0 200 200" aria-hidden="true">
-        <circle cx="100" cy="100" r="82" fill="none" stroke="var(--teal)" strokeWidth="3" />
-        {spokes.map((s, i) => (
-          <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke="var(--teal)" strokeWidth="1.5" />
-        ))}
-        <circle cx="100" cy="100" r="14" fill="none" stroke="var(--teal)" strokeWidth="3" />
-        <rect x="94" y="178" width="12" height="16" fill="var(--teal)" />
-      </svg>
-      <svg className="bgArt bgArtStein" viewBox="0 0 160 200" aria-hidden="true">
-        <path
-          d="M35 55 h70 v120 a10 10 0 0 1 -10 10 h-50 a10 10 0 0 1 -10 -10 Z"
-          fill="none"
-          stroke="var(--gold)"
-          strokeWidth="4"
-        />
-        <path d="M105 75 h20 a14 14 0 0 1 14 14 v40 a14 14 0 0 1 -14 14 h-20" fill="none" stroke="var(--gold)" strokeWidth="4" />
-        <path d="M35 55 q35 -25 70 0" fill="none" stroke="var(--gold)" strokeWidth="4" />
-        <line x1="45" y1="42" x2="45" y2="28" stroke="var(--gold)" strokeWidth="3" />
-        <line x1="60" y1="38" x2="60" y2="22" stroke="var(--gold)" strokeWidth="3" />
-        <line x1="75" y1="42" x2="75" y2="28" stroke="var(--gold)" strokeWidth="3" />
-      </svg>
-      <svg className="bgArt bgArtCocktail" viewBox="0 0 140 200" aria-hidden="true">
-        <path d="M20 20 h100 l-50 60 Z" fill="none" stroke="var(--coral)" strokeWidth="4" />
-        <line x1="70" y1="80" x2="70" y2="150" stroke="var(--coral)" strokeWidth="4" />
-        <line x1="40" y1="170" x2="100" y2="170" stroke="var(--coral)" strokeWidth="4" />
-        <line x1="70" y1="150" x2="70" y2="170" stroke="var(--coral)" strokeWidth="4" />
-        <circle cx="88" cy="34" r="7" fill="none" stroke="var(--coral)" strokeWidth="3" />
-        <line x1="82" y1="34" x2="60" y2="46" stroke="var(--coral)" strokeWidth="3" />
-      </svg>
-      <svg className="bgArt bgArtDecks" viewBox="0 0 220 140" aria-hidden="true">
-        <circle cx="55" cy="70" r="48" fill="none" stroke="var(--tube-red)" strokeWidth="3.5" />
-        <circle cx="55" cy="70" r="14" fill="none" stroke="var(--tube-red)" strokeWidth="3" />
-        <line x1="88" y1="38" x2="108" y2="20" stroke="var(--tube-red)" strokeWidth="3.5" />
-        <circle cx="165" cy="70" r="48" fill="none" stroke="var(--tube-red)" strokeWidth="3.5" />
-        <circle cx="165" cy="70" r="14" fill="none" stroke="var(--tube-red)" strokeWidth="3" />
-        <line x1="132" y1="38" x2="112" y2="20" stroke="var(--tube-red)" strokeWidth="3.5" />
-        <rect x="95" y="46" width="30" height="48" rx="4" fill="none" stroke="var(--tube-red)" strokeWidth="3" />
-        <line x1="103" y1="56" x2="103" y2="84" stroke="var(--tube-red)" strokeWidth="2.5" />
-        <line x1="110" y1="56" x2="110" y2="84" stroke="var(--tube-red)" strokeWidth="2.5" />
-        <line x1="117" y1="56" x2="117" y2="84" stroke="var(--tube-red)" strokeWidth="2.5" />
-      </svg>
-    </>
-  );
-}
-
-function Skyline() {
-  return (
-    <svg className="skyline" viewBox="0 0 400 90" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-      <rect x="0" y="55" width="400" height="35" fill="var(--ink-soft)" />
-      <rect x="18" y="30" width="26" height="25" fill="var(--ink-softer)" />
-      <rect x="52" y="20" width="18" height="35" fill="var(--ink-softer)" />
-      <circle cx="120" cy="40" r="34" fill="none" stroke="var(--teal)" strokeWidth="2.5" opacity="0.55" />
-      <circle cx="120" cy="40" r="3" fill="var(--teal)" opacity="0.55" />
-      <line x1="120" y1="40" x2="120" y2="6" stroke="var(--teal)" strokeWidth="1" opacity="0.4" />
-      <line x1="120" y1="40" x2="120" y2="74" stroke="var(--teal)" strokeWidth="1" opacity="0.4" />
-      <line x1="120" y1="40" x2="86" y2="40" stroke="var(--teal)" strokeWidth="1" opacity="0.4" />
-      <line x1="120" y1="40" x2="154" y2="40" stroke="var(--teal)" strokeWidth="1" opacity="0.4" />
-      <rect x="118" y="72" width="4" height="14" fill="var(--teal)" opacity="0.4" />
-      {[
-        [154, 40, "var(--coral)", "0s"],
-        [144, 64, "var(--gold)", "0.3s"],
-        [120, 74, "var(--teal)", "0.6s"],
-        [96, 64, "var(--tube-red)", "0.9s"],
-        [86, 40, "var(--coral)", "1.2s"],
-        [96, 16, "var(--gold)", "1.5s"],
-        [120, 6, "var(--teal)", "1.8s"],
-        [144, 16, "var(--tube-red)", "2.1s"],
-      ].map(([cx, cy, color, delay], i) => (
-        <circle
-          key={i}
-          className="wheelLight"
-          cx={cx}
-          cy={cy}
-          r="3"
-          fill={color}
-          style={{ animationDelay: delay }}
-        />
-      ))}
-      <path d="M170 55 q40 -34 80 0" fill="none" stroke="var(--tube-red)" strokeWidth="2.5" opacity="0.5" />
-      <rect x="266" y="15" width="20" height="40" fill="var(--ink-softer)" />
-      <rect x="292" y="32" width="14" height="23" fill="var(--ink-softer)" />
-      <rect x="330" y="8" width="22" height="47" fill="var(--ink-softer)" />
-      <rect x="358" y="26" width="16" height="29" fill="var(--ink-softer)" />
-    </svg>
-  );
-}
-
-function TicketFrame({ eyebrow, id, children }) {
-  return (
-    <div className="ticketOuter">
-      <Skyline />
-      <div className="ticket">
-        <div className="fairyLights">
-          {Array.from({ length: 13 }).map((_, i) => (
-            <span key={i} style={{ "--flag-color": BUNTING_COLORS[i % BUNTING_COLORS.length] }} />
-          ))}
-        </div>
-        <div className="bunting">
-          {Array.from({ length: 13 }).map((_, i) => (
-            <span key={i} style={{ "--flag-color": BUNTING_COLORS[(i + 2) % BUNTING_COLORS.length] }} />
-          ))}
-        </div>
-        <div className="ticketTop">
-          <span className="eyebrow">{eyebrow}</span>
-          {id && <span className="serial">{serial(id)}</span>}
-        </div>
-        <div className="perf" />
-        <div className="ticketBody">{children}</div>
+    <div className="ticker">
+      <div className="tickerTrack">
+        <span>{TICKER}</span>
+        <span>{TICKER}</span>
+        <span>{TICKER}</span>
+        <span>{TICKER}</span>
       </div>
+    </div>
+  );
+}
+
+function FairyLights() {
+  const colors = ["#FFC531", "#00E5D0", "#FF2E93", "#8B5CF6", "#FFC531", "#00E5D0", "#FF2E93"];
+  return (
+    <div className="fairyLights">
+      {colors.map((c, i) => (
+        <span key={i} style={{ background: c, boxShadow: `0 0 12px 3px ${c}aa`, animationDelay: `${i * 0.25}s` }} />
+      ))}
+    </div>
+  );
+}
+
+function Equaliser() {
+  const bars = [
+    ["#FF2E93", "30%", "1.1s", "0s"],
+    ["#00E5D0", "60%", "0.8s", "0.15s"],
+    ["#FFC531", "40%", "1.4s", "0.3s"],
+    ["#FF2E93", "80%", "0.95s", "0.05s"],
+    ["#8B5CF6", "50%", "1.25s", "0.4s"],
+    ["#00E5D0", "70%", "0.7s", "0.2s"],
+    ["#FFC531", "35%", "1.5s", "0.1s"],
+    ["#FF2E93", "65%", "1.05s", "0.35s"],
+    ["#8B5CF6", "45%", "0.85s", "0.5s"],
+    ["#00E5D0", "75%", "1.3s", "0.25s"],
+  ];
+  return (
+    <div className="equaliser" aria-hidden="true">
+      {bars.map(([c, h, dur, delay], i) => (
+        <span key={i} style={{ background: c, height: h, animationDuration: dur, animationDelay: delay }} />
+      ))}
+    </div>
+  );
+}
+
+function Card({ eyebrow, right, accent = "gold", children }) {
+  return (
+    <div className={"card card-" + accent}>
+      <div className="cardStripe">
+        <span /><span /><span /><span /><span /><span />
+      </div>
+      <div className="cardTop">
+        <span className="eyebrow">{eyebrow}</span>
+        {right && <span className="serial">{right}</span>}
+      </div>
+      <div className="perf" />
+      <div className="cardBody">{children}</div>
     </div>
   );
 }
@@ -347,14 +390,21 @@ function TicketFrame({ eyebrow, id, children }) {
    Main App
 --------------------------------------------------------- */
 export default function App() {
-  const [view, setView] = useState("entry"); // entry | scratch | result | adminLogin | admin
+  const [view, setView] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("portal") === "btb2026") return "adminLogin";
+    } catch {
+      /* ignore */
+    }
+    return "entry";
+  });
   const [campaigns, setCampaigns] = useState([]);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: "", email: "", company: "", campaignId: "", marketingConsent: false });
+  const [form, setForm] = useState({ name: "", email: "", company: "", campaignId: "", code: "", marketingConsent: false });
   const [formError, setFormError] = useState("");
   const [currentEntry, setCurrentEntry] = useState(null);
-  const [revealed, setRevealed] = useState(false);
 
   const [pw, setPw] = useState("");
   const [pwError, setPwError] = useState("");
@@ -362,6 +412,7 @@ export default function App() {
 
   const [newCampaign, setNewCampaign] = useState({
     name: "",
+    code: "",
     cap: 100,
     drink: 10,
     tickets: 5,
@@ -369,6 +420,9 @@ export default function App() {
     expiresAt: "",
   });
   const [campaignError, setCampaignError] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ cap: "", drink: "", tickets: "", photobooth: "", expiresAt: "" });
+  const [editError, setEditError] = useState("");
   const [campaignFilter, setCampaignFilter] = useState("all");
   const [marketingOnly, setMarketingOnly] = useState(false);
 
@@ -390,9 +444,7 @@ export default function App() {
         const c = await window.storage.get("sc_campaigns", true);
         const loaded = c ? JSON.parse(c.value) : [];
         setCampaigns(loaded);
-        if (urlEventId) {
-          setForm((f) => ({ ...f, campaignId: urlEventId }));
-        }
+        if (urlEventId) setForm((f) => ({ ...f, campaignId: urlEventId }));
       } catch {
         setCampaigns([]);
       }
@@ -409,13 +461,12 @@ export default function App() {
           setBaseUrlInput(b.value);
         }
       } catch {
-        // no base URL saved yet
+        /* ignore */
       }
       setLoading(false);
     })();
   }, []);
 
-  const liveCampaigns = campaigns.filter(isLive);
   const lockedCampaign = urlEventId ? campaigns.find((c) => c.id === urlEventId) : null;
 
   function campaignLink(id) {
@@ -432,7 +483,7 @@ export default function App() {
       setBaseUrlSaved(true);
       setTimeout(() => setBaseUrlSaved(false), 2000);
     } catch {
-      // ignore
+      /* ignore */
     }
   }
 
@@ -478,19 +529,30 @@ export default function App() {
       return;
     }
     if (!/^\S+@\S+\.\S+$/.test(form.email)) {
-      setFormError("Please enter a valid work email.");
+      setFormError("Please enter a valid email.");
       return;
     }
-    if (!form.campaignId) {
-      setFormError("Please choose your event or company.");
-      return;
+    let resolvedCampaignId = form.campaignId;
+
+    if (!urlEventId) {
+      const codeInput = (form.code || "").trim().toUpperCase();
+      if (!codeInput) {
+        setFormError("Please enter your event code.");
+        return;
+      }
+      const matched = campaigns.find((c) => (c.code || "").trim().toUpperCase() === codeInput);
+      if (!matched) {
+        setFormError("That code wasn't recognised. Please check and try again.");
+        return;
+      }
+      resolvedCampaignId = matched.id;
     }
-    const idx = campaigns.findIndex((c) => c.id === form.campaignId);
-    if (idx === -1) {
+
+    const campaign = campaigns.find((c) => c.id === resolvedCampaignId);
+    if (!campaign) {
       setFormError("That event could not be found.");
       return;
     }
-    const campaign = campaigns[idx];
     if (campaign.usedCount >= campaign.cap) {
       setFormError("This event has reached its scratch card limit.");
       return;
@@ -500,17 +562,13 @@ export default function App() {
       return;
     }
     const emailLower = form.email.trim().toLowerCase();
-    const alreadyEntered = entries.some(
-      (en) => en.campaignId === campaign.id && en.email.trim().toLowerCase() === emailLower
-    );
-    if (alreadyEntered) {
+    if (entries.some((en) => en.campaignId === campaign.id && en.email.trim().toLowerCase() === emailLower)) {
       setFormError("This email address has already been used to enter this promotion.");
       return;
     }
     const prizeKey = campaign.queue[campaign.usedCount];
-    const updatedCampaign = { ...campaign, usedCount: campaign.usedCount + 1 };
     const updatedCampaigns = campaigns.map((c) =>
-      c.id === campaign.id ? updatedCampaign : c
+      c.id === campaign.id ? { ...c, usedCount: c.usedCount + 1 } : c
     );
 
     const entry = {
@@ -537,14 +595,12 @@ export default function App() {
     setCampaigns(updatedCampaigns);
     setEntries(updatedEntries);
     setCurrentEntry(entry);
-    setRevealed(false);
     setView("scratch");
   }
 
   function resetToStart() {
-    setForm({ name: "", email: "", company: "", campaignId: "", marketingConsent: false });
+    setForm({ name: "", email: "", company: "", campaignId: "", code: "", marketingConsent: false });
     setCurrentEntry(null);
-    setRevealed(false);
     setView("entry");
   }
 
@@ -557,6 +613,19 @@ export default function App() {
     const photobooth = parseInt(newCampaign.photobooth, 10) || 0;
     if (!newCampaign.name.trim()) {
       setCampaignError("Give this event or company a name.");
+      return;
+    }
+    const code = newCampaign.code.trim().toUpperCase();
+    if (!code) {
+      setCampaignError("Give this event a code for guests to enter.");
+      return;
+    }
+    if (!/^[A-Z0-9-]+$/.test(code)) {
+      setCampaignError("Codes can only contain letters, numbers and hyphens.");
+      return;
+    }
+    if (campaigns.some((c) => (c.code || "").toUpperCase() === code)) {
+      setCampaignError("That code is already in use — please choose another.");
       return;
     }
     if (!cap || cap < 1) {
@@ -584,6 +653,7 @@ export default function App() {
     const campaign = {
       id: Date.now().toString() + Math.floor(Math.random() * 1000),
       name: newCampaign.name.trim(),
+      code,
       cap,
       counts,
       queue: buildQueue(counts, cap),
@@ -599,28 +669,124 @@ export default function App() {
       return;
     }
     setCampaigns(updated);
-    setNewCampaign({ name: "", cap: 100, drink: 10, tickets: 5, photobooth: 5, expiresAt: "" });
+    setNewCampaign({ name: "", code: "", cap: 100, drink: 10, tickets: 5, photobooth: 5, expiresAt: "" });
   }
+
+  function startEdit(c) {
+    setEditingId(c.id);
+    setEditError("");
+    setEditForm({
+      cap: c.cap,
+      drink: c.counts.drink,
+      tickets: c.counts.tickets,
+      photobooth: c.counts.photobooth,
+      expiresAt: c.expiresAt ? new Date(c.expiresAt).toISOString().slice(0, 10) : "",
+    });
+  }
+
+  async function saveEdit(e, id) {
+    if (e && e.preventDefault) e.preventDefault();
+    setEditError("");
+    const campaign = campaigns.find((c) => c.id === id);
+    if (!campaign) return;
+
+    const newCap = parseInt(editForm.cap, 10);
+    const drink = parseInt(editForm.drink, 10) || 0;
+    const tickets = parseInt(editForm.tickets, 10) || 0;
+    const photobooth = parseInt(editForm.photobooth, 10) || 0;
+
+    if (!newCap || newCap < 1) {
+      setEditError("Card limit must be at least 1.");
+      return;
+    }
+    if (newCap < campaign.usedCount) {
+      setEditError(
+        `Can't set the limit below ${campaign.usedCount} — that many cards have already been given out.`
+      );
+      return;
+    }
+    if (drink + tickets + photobooth > newCap) {
+      setEditError("Winners can't add up to more than the new card limit.");
+      return;
+    }
+
+    let expiresAt = null;
+    if (editForm.expiresAt) {
+      const d = new Date(editForm.expiresAt + "T23:59:59");
+      if (isNaN(d.getTime())) {
+        setEditError("That expiry date doesn't look right.");
+        return;
+      }
+      expiresAt = d.getTime();
+    }
+
+    // Cards already scratched keep whatever they already revealed — we only
+    // reshuffle what's left, so past results are never changed retroactively.
+    const already = wonSoFar(campaign);
+    const remainingSlots = newCap - campaign.usedCount;
+    const remainingCounts = {
+      drink: Math.max(drink - already.drink, 0),
+      tickets: Math.max(tickets - already.tickets, 0),
+      photobooth: Math.max(photobooth - already.photobooth, 0),
+    };
+    const remainingTotal = remainingCounts.drink + remainingCounts.tickets + remainingCounts.photobooth;
+    if (remainingTotal > remainingSlots) {
+      setEditError(
+        "Not enough cards left to fit those winner counts alongside what's already been given out."
+      );
+      return;
+    }
+
+    const usedPrefix = campaign.queue.slice(0, campaign.usedCount);
+    const newRemainingQueue = buildQueue(remainingCounts, remainingSlots);
+    const newQueue = [...usedPrefix, ...newRemainingQueue];
+
+    const updatedCampaign = {
+      ...campaign,
+      cap: newCap,
+      counts: { drink, tickets, photobooth },
+      queue: newQueue,
+      expiresAt,
+    };
+    const updated = campaigns.map((c) => (c.id === id ? updatedCampaign : c));
+    try {
+      await window.storage.set("sc_campaigns", JSON.stringify(updated), true);
+    } catch {
+      setEditError("Could not save changes. Please try again.");
+      return;
+    }
+    setCampaigns(updated);
+    setEditingId(null);
+  }
+
+  const filteredEntries = entries
+    .filter((e) => campaignFilter === "all" || e.campaignId === campaignFilter)
+    .filter((e) => !marketingOnly || e.marketingConsent);
 
   function exportCSV() {
     const rows = [
-      ["Name", "Email", "Company", "Event", "Prize", "Marketing opt-in", "Date"],
-      ...filteredEntries.map((e) => [
-        e.name,
-        e.email,
-        e.company,
-        e.campaignName,
-        PRIZES[e.prize]?.label || e.prize,
-        e.marketingConsent ? "Yes" : "No",
-        fmtDate(e.timestamp),
-      ]),
+      ["Name", "Email", "Company", "Event", "Code", "Prize", "Marketing opt-in", "Date"],
+      ...filteredEntries.map((e) => {
+        const c = campaigns.find((x) => x.id === e.campaignId);
+        return [
+          e.name,
+          e.email,
+          e.company,
+          e.campaignName,
+          c?.code || "",
+          PRIZES[e.prize]?.label || e.prize,
+          e.marketingConsent ? "Yes" : "No",
+          fmtDate(e.timestamp),
+        ];
+      }),
     ];
     const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = "scratch-card-entries.csv";
+    const sel = campaignFilter !== "all" ? campaigns.find((c) => c.id === campaignFilter) : null;
+    const suffix = sel ? "-" + (sel.code || sel.name).replace(/[^a-z0-9]+/gi, "-").toLowerCase() : "";
+    a.download = `scratch-card-entries${suffix}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -641,737 +807,353 @@ export default function App() {
     }
   }
 
-  const filteredEntries = entries
-    .filter((e) => campaignFilter === "all" || e.campaignId === campaignFilter)
-    .filter((e) => !marketingOnly || e.marketingConsent);
-
   const prizeResult = currentEntry ? PRIZES[currentEntry.prize] : null;
   const isWin = currentEntry && currentEntry.prize !== "noWin";
+
+  const Masthead = (
+    <div className="masthead">
+      <div className="logo">Between The Bridges</div>
+      <div className="subLogo">Waterloo · Southbank · London</div>
+    </div>
+  );
 
   return (
     <div className="app">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
 
-        :root {
-          --ink: #14151c;
-          --ink-soft: #1c1f28;
-          --ink-softer: #272b36;
-          --gold: #ffb400;
-          --gold-light: #ffcf5c;
-          --coral: #ff3d78;
-          --tube-red: #e32017;
-          --teal: #17a3a0;
-          --cream: #f2ede1;
-          --text-light: #ece9e2;
-          --text-muted: #8d94a3;
-        }
         * { box-sizing: border-box; }
         .app {
-          background-color: var(--ink);
-          background-image:
-            radial-gradient(circle at 12% 15%, rgba(255,61,120,0.32), transparent 42%),
-            radial-gradient(circle at 88% 20%, rgba(23,163,160,0.30), transparent 44%),
-            radial-gradient(circle at 50% 95%, rgba(255,180,0,0.28), transparent 48%),
-            radial-gradient(circle at 85% 80%, rgba(227,32,23,0.18), transparent 40%),
-            radial-gradient(rgba(255,180,0,0.1) 1px, transparent 1.5px);
-          background-size: auto, auto, auto, auto, 22px 22px;
+          position: relative;
           min-height: 100vh;
-          font-family: 'Inter', sans-serif;
-          color: var(--text-light);
-          padding: 48px 20px 80px;
-          position: relative;
+          overflow: hidden;
+          background-color: #0B0714;
+          background-image:
+            radial-gradient(circle at 14% 8%, rgba(255,46,147,0.34), transparent 46%),
+            radial-gradient(circle at 86% 14%, rgba(0,229,208,0.26), transparent 46%),
+            radial-gradient(circle at 50% 102%, rgba(255,197,49,0.22), transparent 55%);
+          font-family: 'Space Grotesk', sans-serif;
+          color: #F3EDE4;
+          padding-bottom: 150px;
         }
-        .content {
-          position: relative;
-          z-index: 1;
+        .app a { color: #00E5D0; text-decoration: none; }
+        .app a:hover { color: #FF2E93; }
+
+        @keyframes btbMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @keyframes btbSpin { to { transform: rotate(360deg); } }
+        @keyframes btbBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes btbTwinkle { 0%,100% { opacity: .3; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.15); } }
+        @keyframes btbEq { 0%,100% { height: 14%; } 50% { height: 100%; } }
+        @keyframes btbGlow { 0%,100% { text-shadow: 0 0 18px rgba(255,46,147,.55); } 50% { text-shadow: 0 0 34px rgba(0,229,208,.75); } }
+        @keyframes btbPop { from { transform: scale(.7) rotate(-4deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+        @keyframes btbWobble { 0%,100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+        @keyframes btbDrift { from { background-position: 0 0; } to { background-position: 420px 0; } }
+
+        .waterline {
+          position: absolute; left: 0; right: 0; bottom: 0; height: 130px; opacity: .5; pointer-events: none;
+          background-image:
+            repeating-linear-gradient(180deg, rgba(0,229,208,.20) 0 1px, transparent 1px 7px),
+            repeating-linear-gradient(90deg, rgba(255,46,147,.12) 0 2px, transparent 2px 16px);
+          animation: btbDrift 9s linear infinite;
         }
-        .bgArt {
-          position: fixed;
-          z-index: 0;
-          opacity: 0.09;
-          pointer-events: none;
+        .equaliser {
+          position: absolute; left: 0; right: 0; bottom: 26px; height: 78px;
+          display: flex; align-items: flex-end; justify-content: center; gap: 7px;
+          pointer-events: none; opacity: .55;
         }
-        .bgArtEye {
-          top: 30px;
-          right: -70px;
-          width: 300px;
-          height: 300px;
+        .equaliser span { width: 8px; border-radius: 3px 3px 0 0; animation-name: btbEq; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+
+        .ticker { position: relative; z-index: 3; background: #FF2E93; color: #0B0714; overflow: hidden; border-bottom: 3px solid #0B0714; }
+        .tickerTrack {
+          display: flex; width: max-content; animation: btbMarquee 26s linear infinite;
+          font-family: 'Anton', sans-serif; font-size: 19px; letter-spacing: .14em; text-transform: uppercase; padding: 9px 0;
         }
-        .bgArtStein {
-          bottom: -10px;
-          left: -30px;
-          width: 180px;
-          height: 220px;
-          transform: rotate(-6deg);
+        .tickerTrack span { padding-right: 28px; }
+
+        .fairyLights { position: relative; z-index: 2; display: flex; justify-content: center; gap: 26px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+        .fairyLights span { width: 9px; height: 9px; border-radius: 50%; animation: btbTwinkle 1.8s ease-in-out infinite; }
+
+        .discoWrap { position: absolute; top: 44px; left: 50%; transform: translateX(-50%); z-index: 1; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+        .discoCord { width: 2px; height: 46px; background: linear-gradient(#ffffff55, #ffffff11); }
+        .discoBall {
+          width: 92px; height: 92px; border-radius: 50%; animation: btbSpin 9s linear infinite; opacity: .75;
+          background-image:
+            repeating-conic-gradient(from 0deg, rgba(255,46,147,.85) 0deg 12deg, rgba(0,229,208,.85) 12deg 24deg, rgba(255,197,49,.75) 24deg 36deg, rgba(139,92,246,.85) 36deg 48deg),
+            radial-gradient(circle at 32% 28%, rgba(255,255,255,.9), transparent 55%);
+          box-shadow: 0 0 70px 18px rgba(255,46,147,.28), inset -14px -14px 30px rgba(0,0,0,.6);
         }
-        .bgArtCocktail {
-          top: 20px;
-          left: -30px;
-          width: 150px;
-          height: 210px;
-          transform: rotate(6deg);
-        }
-        .bgArtDecks {
-          bottom: 10px;
-          right: -50px;
-          width: 260px;
-          height: 165px;
-        }
-        @media (max-width: 640px) {
-          .bgArtEye { width: 200px; height: 200px; right: -60px; }
-          .bgArtStein { width: 130px; height: 160px; left: -25px; }
-          .bgArtCocktail { width: 100px; height: 140px; left: -20px; top: 10px; }
-          .bgArtDecks { width: 170px; height: 108px; right: -35px; }
-        }
+
+        .masthead { position: relative; z-index: 2; padding: 74px 18px 0; text-align: center; }
         .logo {
-          text-align: center;
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 34px;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          margin-bottom: 4px;
-          background: linear-gradient(90deg, var(--gold-light), var(--coral));
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-          line-height: 1;
+          font-family: 'Anton', sans-serif; font-size: 42px; line-height: .92; letter-spacing: .02em; text-transform: uppercase;
+          background: linear-gradient(96deg, #FFC531, #FF2E93 55%, #00E5D0);
+          -webkit-background-clip: text; background-clip: text; color: transparent;
+          animation: btbGlow 4s ease-in-out infinite;
         }
-        .subLogo {
-          text-align: center;
-          font-family: 'Space Mono', monospace;
-          font-size: 11px;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: var(--text-muted);
-          margin-bottom: 34px;
+        .subLogo { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .26em; text-transform: uppercase; color: #A79BC4; margin-top: 8px; }
+
+        .stage { position: relative; z-index: 2; padding: 26px 18px 0; }
+        .hero {
+          max-width: 440px; margin: 0 auto 20px; font-family: 'Anton', sans-serif; font-weight: 400;
+          font-size: 74px; line-height: .86; text-transform: uppercase; text-align: center;
         }
-        .fairyLights {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
-          padding: 12px 0 6px;
-          background: var(--ink-soft);
+        .hero span { display: block; }
+        .hero .l1 { color: #FFC531; transform: rotate(-2deg); }
+        .hero .l2 { color: #FF2E93; transform: rotate(1.5deg); }
+        .hero .l3 { color: #00E5D0; transform: rotate(-1deg); }
+        @media (max-width: 480px) { .hero { font-size: 56px; } .logo { font-size: 34px; } }
+
+        .card {
+          max-width: 440px; margin: 0 auto; background: #14102A; border: 1px solid rgba(255,255,255,.09);
+          border-radius: 22px; overflow: hidden;
+          box-shadow: 0 34px 70px rgba(0,0,0,.55), 0 0 60px -14px rgba(255,46,147,.35), 0 0 80px -20px rgba(0,229,208,.3);
         }
-        .fairyLights span {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--flag-color, var(--gold));
-          box-shadow: 0 0 6px 2px var(--flag-color, var(--gold));
+        .card-teal { box-shadow: 0 34px 70px rgba(0,0,0,.55), 0 0 70px -14px rgba(0,229,208,.4); }
+        .card-win { box-shadow: 0 34px 70px rgba(0,0,0,.55), 0 0 80px -12px rgba(255,197,49,.45); animation: btbPop .5s cubic-bezier(.2,1.3,.4,1) both; }
+        .cardStripe { display: flex; height: 12px; }
+        .cardStripe span:nth-child(1) { flex: 1; background: #FF2E93; }
+        .cardStripe span:nth-child(2) { flex: 1; background: #FFC531; }
+        .cardStripe span:nth-child(3) { flex: 1; background: #00E5D0; }
+        .cardStripe span:nth-child(4) { flex: 1; background: #8B5CF6; }
+        .cardStripe span:nth-child(5) { flex: 1; background: #FF2E93; }
+        .cardStripe span:nth-child(6) { flex: 1; background: #FFC531; }
+        .cardTop { display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; }
+        .eyebrow { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #FFC531; }
+        .serial { font-family: 'Space Mono', monospace; font-size: 11px; color: #7E75A0; }
+        .perf { height: 0; border-top: 2px dashed rgba(255,255,255,.16); }
+        .cardBody { padding: 26px 24px 30px; }
+
+        .lede { margin: 0 0 22px; font-size: 15px; line-height: 1.55; color: #BDB3D6; }
+        label.field { display: block; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8E85AE; margin: 18px 0 7px; }
+        label.field:first-of-type { margin-top: 0; }
+        .app input[type=text], .app input[type=email], .app input[type=number], .app input[type=password], .app input[type=date], .app select {
+          width: 100%; background: #0B0714; border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
+          padding: 13px 14px; color: #F3EDE4; font-family: 'Space Grotesk', sans-serif; font-size: 15px;
         }
-        .bunting {
-          display: flex;
-          justify-content: center;
-          gap: 5px;
-          padding: 0 0 10px;
-          background: var(--ink-soft);
-        }
-        .bunting span {
-          width: 0;
-          height: 0;
-          border-left: 7px solid transparent;
-          border-right: 7px solid transparent;
-          border-top: 11px solid var(--flag-color, var(--gold));
-        }
-        .ticketOuter {
-          position: relative;
-          max-width: 400px;
-          margin: 0 auto;
-        }
-        .skyline {
-          position: absolute;
-          left: 50%;
-          bottom: -18px;
-          transform: translateX(-50%);
-          width: 118%;
-          height: 90px;
-          z-index: 0;
-          pointer-events: none;
-        }
-        .ticket {
-          position: relative;
-          z-index: 1;
-          max-width: 400px;
-          margin: 0 auto;
-          background: var(--ink-soft);
-          border-radius: 18px;
-          overflow: hidden;
-          box-shadow: 0 30px 60px rgba(0,0,0,0.45), 0 0 50px -10px rgba(255,61,120,0.25), 0 0 70px -20px rgba(23,163,160,0.25);
-          border: 1px solid var(--ink-softer);
-        }
-        .ticketTop {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px 22px;
-        }
-        .eyebrow {
-          font-family: 'Space Mono', monospace;
-          font-size: 11px;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--gold-light);
-        }
-        .serial {
-          font-family: 'Space Mono', monospace;
-          font-size: 11px;
-          color: var(--text-muted);
-        }
-        .perf {
-          height: 0;
-          border-top: 2px dashed var(--ink-softer);
-          position: relative;
-          margin: 0 -1px;
-        }
-        .perf::before, .perf::after {
-          content: '';
-          position: absolute;
-          top: -9px;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: var(--ink);
-        }
-        .perf::before { left: -9px; }
-        .perf::after { right: -9px; }
-        .ticketBody { padding: 28px 26px 30px; }
-        h1.headline {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 32px;
-          font-weight: 400;
-          letter-spacing: 0.01em;
-          line-height: 1.1;
-          margin: 0 0 8px;
-        }
-        .sub {
-          color: var(--text-muted);
-          font-size: 14px;
-          margin: 0 0 24px;
-          line-height: 1.5;
-        }
-        label {
-          display: block;
-          font-size: 12px;
-          font-family: 'Space Mono', monospace;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          margin-bottom: 6px;
-          margin-top: 16px;
-        }
-        input[type=text], input[type=email], input[type=number], select {
-          width: 100%;
-          background: var(--ink);
-          border: 1px solid var(--ink-softer);
-          border-radius: 8px;
-          padding: 11px 12px;
-          color: var(--text-light);
-          font-family: 'Inter', sans-serif;
-          font-size: 14px;
-        }
-        input:focus, select:focus {
-          outline: 2px solid var(--gold);
-          outline-offset: 1px;
-        }
+        .app input:focus, .app select:focus { outline: 2px solid #FFC531; outline-offset: 1px; }
+        .codeInput { font-family: 'Space Mono', monospace !important; letter-spacing: .12em; text-transform: uppercase; }
+        .hint { margin: 9px 0 0; font-size: 12px; color: #7E75A0; }
+        .checkRow { display: flex; align-items: flex-start; gap: 11px; margin-top: 20px; cursor: pointer; }
+        .checkRow input { margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0; accent-color: #FF2E93; }
+        .checkRow span { font-size: 12.5px; line-height: 1.5; color: #8E85AE; }
+        .err { margin-top: 14px; color: #FF2E93; font-size: 13.5px; }
+
         .btn {
-          margin-top: 24px;
-          width: 100%;
-          background: linear-gradient(90deg, var(--gold-light), var(--gold) 55%, var(--coral));
-          color: var(--ink);
-          border: none;
-          border-radius: 8px;
-          padding: 13px;
-          font-family: 'Bebas Neue', sans-serif;
-          font-weight: 700;
-          font-size: 15px;
-          letter-spacing: 0.03em;
-          cursor: pointer;
+          margin-top: 22px; width: 100%; border: none; border-radius: 12px; padding: 16px; cursor: pointer;
+          background: linear-gradient(96deg, #FFC531, #FF2E93 60%, #8B5CF6); color: #0B0714;
+          font-family: 'Anton', sans-serif; font-size: 20px; letter-spacing: .06em; text-transform: uppercase;
         }
-        .btn:hover { filter: brightness(1.08); box-shadow: 0 8px 26px -4px rgba(255,61,120,0.45); }
-        .btnGhost {
-          background: transparent;
-          border: 1px solid var(--ink-softer);
-          color: var(--text-light);
-        }
-        .err {
-          color: var(--coral);
-          font-size: 13px;
-          margin-top: 14px;
-        }
-        .checkRow {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          margin-top: 20px;
-          cursor: pointer;
-        }
-        .checkRow input {
-          margin-top: 3px;
-          width: 15px;
-          height: 15px;
-          flex-shrink: 0;
-          accent-color: var(--gold);
-        }
-        .checkRow span {
-          font-size: 12px;
-          color: var(--text-muted);
-          line-height: 1.5;
-        }
-        .scratchWrap {
-          position: relative;
-          width: 300px;
-          height: 260px;
-          margin: 4px auto 0;
-          border-radius: 10px;
-          overflow: hidden;
-          touch-action: none;
-        }
-        .revealingTag {
-          position: absolute;
-          left: 50%;
-          bottom: 10px;
-          transform: translateX(-50%);
-          background: rgba(22,24,41,0.82);
-          color: var(--gold-light);
-          font-family: 'Space Mono', monospace;
-          font-size: 11px;
-          letter-spacing: 0.04em;
-          padding: 6px 12px;
-          border-radius: 999px;
-          animation: pulseTag 1.2s ease-in-out infinite;
-        }
-        @keyframes pulseTag {
-          0%, 100% { opacity: 0.75; }
-          50% { opacity: 1; }
-        }
-        .symbolsRow {
-          position: absolute;
-          inset: 0;
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          grid-template-rows: repeat(3, 1fr);
-          background: var(--cream);
-        }
-        .symbolCell {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 30px;
-          border-right: 1px dashed rgba(22,24,41,0.15);
-          border-bottom: 1px dashed rgba(22,24,41,0.15);
-        }
+        .btn:hover { filter: brightness(1.1); box-shadow: 0 12px 34px -6px rgba(255,46,147,.6); }
+        .btnGhost { background: transparent; border: 1px solid rgba(255,255,255,.18); color: #F3EDE4; }
+        .btnGhost:hover { border-color: #00E5D0; color: #00E5D0; box-shadow: none; filter: none; }
+        .btnSmall { width: auto; margin-top: 0; padding: 9px 18px; font-size: 14px; border-radius: 999px; }
+
+        .lockedEvent { margin-top: 18px; background: rgba(255,197,49,.12); border: 1px solid #FFC531; color: #FFC531; border-radius: 10px; padding: 13px 14px; font-weight: 700; font-size: 15px; }
+
+        .scratchWrap { position: relative; width: 100%; max-width: 320px; aspect-ratio: 6 / 5; margin: 0 auto; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 3px rgba(255,197,49,.35); touch-action: none; }
+        .symbolsGrid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); background: #F7F1E3; }
+        .symbolCell { display: flex; align-items: center; justify-content: center; border-right: 1px dashed rgba(11,7,20,.14); border-bottom: 1px dashed rgba(11,7,20,.14); }
         .symbolCell:nth-child(3n) { border-right: none; }
         .symbolCell:nth-child(n+7) { border-bottom: none; }
-        .brandBadge {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 15px;
-          letter-spacing: 0.04em;
-          color: var(--ink);
-          background: var(--gold);
-          border-radius: 6px;
-          padding: 3px 8px;
-          line-height: 1;
-        }
-        .scratchCanvas {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          cursor: pointer;
-        }
-        .lockedEvent {
-          background: rgba(255,180,0,0.12);
-          border: 1px solid var(--gold);
-          color: var(--gold-light);
-          border-radius: 8px;
-          padding: 11px 12px;
-          font-weight: 600;
-          font-size: 14px;
-        }
-        .hint {
-          text-align: center;
-          font-size: 12px;
-          color: var(--text-muted);
-          margin-top: 14px;
-        }
-        .resultBanner {
-          text-align: center;
-          padding: 10px 0 4px;
-        }
-        .resultIcon { font-size: 44px; margin-bottom: 10px; }
-        .resultTitle {
-          font-family: 'Bebas Neue', sans-serif;
-          font-weight: 700;
-          font-size: 20px;
-          margin: 0 0 8px;
-        }
-        .win .resultTitle { color: var(--gold-light); }
-        .resultNote { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
-        .adminLink {
-          position: fixed;
-          bottom: 14px;
-          right: 18px;
-          font-size: 11px;
-          color: var(--text-muted);
-          font-family: 'Space Mono', monospace;
-          background: none;
-          border: none;
-          cursor: pointer;
-          opacity: 0.6;
-        }
-        .adminLink:hover { opacity: 1; }
+        .scratchCanvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; }
+        .scratchTitle { margin: 0 0 6px; font-family: 'Anton', sans-serif; font-weight: 400; font-size: 40px; line-height: 1; text-transform: uppercase; color: #FFC531; }
+        .scratchNote { text-align: center; margin: 16px 0 0; font-family: 'Space Mono', monospace; font-size: 11.5px; letter-spacing: .08em; color: #7E75A0; }
 
-        .adminWrap { max-width: 1000px; margin: 0 auto; }
-        .adminHeader {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 28px;
-        }
-        .adminHeader h1 {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 22px;
-          margin: 0;
-        }
-        .tabs { display: flex; gap: 8px; margin-bottom: 22px; }
-        .tab {
-          font-family: 'Space Mono', monospace;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          padding: 9px 16px;
-          border-radius: 999px;
-          border: 1px solid var(--ink-softer);
-          background: transparent;
-          color: var(--text-muted);
-          cursor: pointer;
-        }
-        .tab.active { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 700; }
-        .panel {
-          background: var(--ink-soft);
-          border: 1px solid var(--ink-softer);
-          border-radius: 14px;
-          padding: 22px;
-          margin-bottom: 20px;
-        }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th {
-          text-align: left;
-          font-family: 'Space Mono', monospace;
-          text-transform: uppercase;
-          font-size: 11px;
-          letter-spacing: 0.05em;
-          color: var(--text-muted);
-          padding: 8px 10px;
-          border-bottom: 1px solid var(--ink-softer);
-        }
-        td {
-          padding: 10px;
-          border-bottom: 1px solid var(--ink-softer);
-          font-family: 'Inter', sans-serif;
-        }
-        .prizeTag {
-          font-family: 'Space Mono', monospace;
-          font-size: 11px;
-          padding: 3px 8px;
-          border-radius: 999px;
-          background: var(--ink-softer);
-          display: inline-block;
-        }
-        .prizeTag.win { background: rgba(255,180,0,0.18); color: var(--gold-light); }
-        .prizeTag.p-drink { background: rgba(255,61,120,0.18); color: var(--coral); }
-        .prizeTag.p-tickets { background: rgba(255,180,0,0.18); color: var(--gold-light); }
-        .prizeTag.p-photobooth { background: rgba(23,163,160,0.2); color: var(--teal); }
-        .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .statusTag {
-          display: inline-block;
-          font-family: 'Space Mono', monospace;
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          padding: 2px 7px;
-          border-radius: 999px;
-          vertical-align: middle;
-        }
-        .statusTag.open { background: rgba(23,163,160,0.2); color: var(--teal); }
-        .statusTag.closed { background: rgba(255,61,120,0.18); color: var(--coral); }
-        .campaignCard {
-          border: 1px solid var(--ink-softer);
-          border-radius: 10px;
-          padding: 16px;
-          margin-bottom: 12px;
-        }
-        .campaignCardHead {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        .campaignCard h3 {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 15px;
-          margin: 0 0 6px;
-        }
-        .btnSmall {
-          width: auto;
-          margin-top: 0;
-          padding: 6px 12px;
-          font-size: 11px;
-          letter-spacing: 0.04em;
-        }
-        .linkPreview {
-          display: block;
-          width: 100%;
-          font-family: 'Space Mono', monospace;
-          font-size: 11px;
-          color: var(--text-muted);
-          background: var(--ink);
-          border: 1px solid var(--ink-softer);
-          border-radius: 6px;
-          padding: 7px 9px;
-          margin: 4px 0 10px;
-        }
-        .statRow {
-          display: flex;
-          gap: 18px;
-          flex-wrap: wrap;
-          font-family: 'Space Mono', monospace;
-          font-size: 12px;
-          color: var(--text-muted);
-          margin-top: 10px;
-        }
-        .statRow b { color: var(--text-light); }
-        .barOuter {
-          height: 6px;
-          background: var(--ink-softer);
-          border-radius: 4px;
-          margin-top: 10px;
-          overflow: hidden;
-        }
-        .barInner { height: 100%; background: linear-gradient(90deg, var(--coral), var(--gold), var(--teal)); }
-        .empty { color: var(--text-muted); font-size: 13px; text-align: center; padding: 30px 0; }
-        @media (max-width: 640px) {
-          .grid2 { grid-template-columns: 1fr; }
-          table { font-size: 12px; }
-        }
+        .resultBody { text-align: center; }
+        .resultIcon { animation: btbBob 2.2s ease-in-out infinite; }
+        .resultTitle { margin: 14px 0 10px; font-family: 'Anton', sans-serif; font-weight: 400; font-size: 58px; line-height: .9; text-transform: uppercase; color: #FFC531; animation: btbWobble 2.4s ease-in-out infinite; }
+        .prizeLabel { margin: 0 0 10px; font-size: 19px; font-weight: 700; }
+        .resultNote { margin: 0; font-size: 14px; line-height: 1.55; color: #8E85AE; }
+
+        .adminWrap { position: relative; z-index: 2; max-width: 1000px; margin: 0 auto; padding: 26px 18px 0; }
+        .adminHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+        .adminHeader h1 { margin: 0; font-family: 'Anton', sans-serif; font-weight: 400; font-size: 30px; text-transform: uppercase; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab { font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 10px 18px; border-radius: 999px; cursor: pointer; border: 1px solid rgba(255,255,255,.14); background: transparent; color: #8E85AE; }
+        .tab.active { border-color: #FF2E93; background: #FF2E93; color: #0B0714; font-weight: 700; }
+        .panel { background: #14102A; border: 1px solid rgba(255,255,255,.09); border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+        .panel h3 { margin: 0 0 6px; font-family: 'Anton', sans-serif; font-weight: 400; font-size: 22px; text-transform: uppercase; }
+        .panel p.sub { margin: 0 0 16px; font-size: 13.5px; color: #8E85AE; }
+        .chipRow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .chip { font-family: 'Space Mono', monospace; font-size: 12px; padding: 9px 15px; border-radius: 999px; cursor: pointer; border: 1px solid rgba(255,255,255,.14); background: #0B0714; color: #8E85AE; }
+        .chip.active { border-color: #FFC531; background: #FFC531; color: #0B0714; font-weight: 700; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+        .app table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .app th { text-align: left; font-family: 'Space Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #7E75A0; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .app td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.06); }
+        .prizeTag { font-family: 'Space Mono', monospace; font-size: 11px; padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,.07); color: #7E75A0; display: inline-block; }
+        .prizeTag.win { background: rgba(255,197,49,.18); color: #FFC531; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+        .campaignCard { border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .campaignCard h4 { margin: 0; font-family: 'Anton', sans-serif; font-weight: 400; font-size: 19px; text-transform: uppercase; }
+        .campaignHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .statusTag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: rgba(0,229,208,.18); color: #00E5D0; }
+        .statusTag.closed { background: rgba(255,46,147,.18); color: #FF2E93; }
+        .meta { margin: 8px 0 10px; font-family: 'Space Mono', monospace; font-size: 12px; color: #8E85AE; }
+        .meta b { color: #FFC531; }
+        .barOuter { height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+        .barInner { height: 100%; background: linear-gradient(90deg, #FF2E93, #FFC531, #00E5D0); }
+        .linkPreview { margin-top: 10px; font-family: 'Space Mono', monospace !important; font-size: 11px !important; color: #8E85AE !important; }
+        .empty { text-align: center; padding: 34px 0; color: #7E75A0; font-size: 13px; }
+        @media (max-width: 640px) { .app table { font-size: 12px; } }
       `}</style>
 
-      <BackgroundArt />
-      <div className="content">
+      <Ticker />
+      <FairyLights />
+      <div className="discoWrap">
+        <div className="discoCord" />
+        <div className="discoBall" />
+      </div>
+      <div className="waterline" />
+      <Equaliser />
+
       {loading ? (
         <div className="empty">Loading…</div>
       ) : view === "entry" ? (
         <>
-          <div className="logo">Between The Bridges Scratch &amp; Win</div>
-          <div className="subLogo">London Waterloo &middot; Southbank</div>
-          <TicketFrame eyebrow="Tap in to play">
-            <h1 className="headline">Scratch. Reveal. Win.</h1>
-            <p className="sub">
-              Pop in your details to unlock your scratch card — match three
-              symbols to see what you've won.
-            </p>
-            <form onSubmit={submitEntry}>
-              <label>Full name</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Jordan Lee"
-              />
-              <label>Work email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="jordan@company.com"
-              />
-              <label>Company</label>
-              <input
-                type="text"
-                value={form.company}
-                onChange={(e) => setForm({ ...form, company: e.target.value })}
-                placeholder="Acme Corp"
-              />
-              {urlEventId ? (
-                <>
-                  <label>Event / company promotion</label>
-                  {lockedCampaign && isLive(lockedCampaign) ? (
-                    <div className="lockedEvent">🎫 {lockedCampaign.name}</div>
+          {Masthead}
+          <div className="stage">
+            <h1 className="hero">
+              <span className="l1">Scratch.</span>
+              <span className="l2">Reveal.</span>
+              <span className="l3">Dance.</span>
+            </h1>
+            <Card eyebrow="Tap in to play" right="Free entry">
+              <p className="lede">
+                Three matching symbols is all it takes. Drop your details in and see what you have won.
+              </p>
+              <form onSubmit={submitEntry}>
+                <label className="field">Full name</label>
+                <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Jordan Lee" />
+
+                <label className="field">Email</label>
+                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="jordan@company.com" />
+
+                <label className="field">Company</label>
+                <input type="text" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Acme Corp" />
+
+                {urlEventId ? (
+                  lockedCampaign && isLive(lockedCampaign) ? (
+                    <div className="lockedEvent">{lockedCampaign.name}</div>
                   ) : lockedCampaign && lockedCampaign.expiresAt && Date.now() > lockedCampaign.expiresAt ? (
                     <p className="err">This event has now ended.</p>
                   ) : lockedCampaign ? (
                     <p className="err">This event has reached its scratch card limit.</p>
                   ) : (
                     <p className="err">This event link is invalid or no longer live.</p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <label>Event / company promotion</label>
-                  <select
-                    value={form.campaignId}
-                    onChange={(e) => setForm({ ...form, campaignId: e.target.value })}
-                  >
-                    <option value="">Select…</option>
-                    {liveCampaigns.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  {liveCampaigns.length === 0 && (
-                    <p className="hint">No live scratch card promotions right now.</p>
-                  )}
-                </>
-              )}
-              <label className="checkRow">
-                <input
-                  type="checkbox"
-                  checked={form.marketingConsent}
-                  onChange={(e) => setForm({ ...form, marketingConsent: e.target.checked })}
-                />
-                <span>
-                  I'm happy to be contacted by email about future events, offers and promotions.
-                </span>
-              </label>
-              {formError && <div className="err">{formError}</div>}
-              <button className="btn" type="submit" onClick={submitEntry}>
-                Reveal my card
-              </button>
-            </form>
-          </TicketFrame>
-          <button className="adminLink" onClick={() => setView("adminLogin")}>
-            Admin login
-          </button>
+                  )
+                ) : (
+                  <>
+                    <label className="field">Event code</label>
+                    <input
+                      className="codeInput"
+                      type="text"
+                      value={form.code}
+                      onChange={(e) => setForm({ ...form, code: e.target.value })}
+                      placeholder="e.g. TEST"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck="false"
+                    />
+                    <p className="hint">The code from your host, your company, or the door team.</p>
+                  </>
+                )}
+
+                <label className="checkRow">
+                  <input type="checkbox" checked={form.marketingConsent} onChange={(e) => setForm({ ...form, marketingConsent: e.target.checked })} />
+                  <span>Keep me posted on gigs, parties and offers by the river.</span>
+                </label>
+
+                {formError && <div className="err">{formError}</div>}
+                <button className="btn" type="submit">Get my card</button>
+              </form>
+            </Card>
+          </div>
         </>
       ) : view === "scratch" ? (
         <>
-          <div className="logo">Between The Bridges Scratch &amp; Win</div>
-          <div className="subLogo">London Waterloo &middot; Southbank</div>
-          <TicketFrame eyebrow={currentEntry.campaignName} id={currentEntry.id}>
-            <h1 className="headline">Good luck, {currentEntry.name.split(" ")[0]}</h1>
-            <p className="sub">Scratch off the whole gold panel to reveal all your symbols.</p>
-            <ScratchPanel
-              prizeKey={currentEntry.prize}
-              onRevealed={() => {
-                setRevealed(true);
-                setView("result");
-              }}
-            />
-            <p className="hint">Find 3 matching symbols among the 9 to win.</p>
-          </TicketFrame>
+          {Masthead}
+          <div className="stage">
+            <Card eyebrow={currentEntry.campaignName} right={serial(currentEntry.id)} accent="teal">
+              <h1 className="scratchTitle">Good luck, {currentEntry.name.split(" ")[0]}</h1>
+              <p className="lede">Rub the foil off. Three of a kind and you're winning.</p>
+              <ScratchPanel prizeKey={currentEntry.prize} onRevealed={() => setView("result")} />
+              <p className="scratchNote">FIND 3 MATCHING SYMBOLS TO WIN</p>
+            </Card>
+          </div>
         </>
       ) : view === "result" ? (
         <>
-          <div className="logo">Between The Bridges Scratch &amp; Win</div>
-          <div className="subLogo">London Waterloo &middot; Southbank</div>
-          <TicketFrame eyebrow={currentEntry.campaignName} id={currentEntry.id}>
-            <div className={"resultBanner " + (isWin ? "win" : "")}>
-              <div className="resultIcon">{isWin ? "🎉" : "😔"}</div>
-              <h1 className="resultTitle">
-                {isWin ? "You're a winner!" : "So close!"}
-              </h1>
-              <p className="sub" style={{ marginBottom: 4 }}>
-                {prizeResult.label}
-              </p>
-              <p className="resultNote">
-                {isWin
-                  ? "A member of staff will be in touch with your prize."
-                  : "Thanks for playing — keep an eye out for more chances to win."}
-              </p>
-            </div>
-            <button className="btn btnGhost" onClick={resetToStart}>
-              Done
-            </button>
-          </TicketFrame>
+          {Masthead}
+          <div className="stage">
+            <Card eyebrow={currentEntry.campaignName} right={serial(currentEntry.id)} accent="win">
+              <div className="resultBody">
+                <div className="resultIcon">
+                  <GridIcon name={prizeResult.icon} size={76} />
+                </div>
+                <h1 className="resultTitle">{isWin ? "Winner!" : "So close"}</h1>
+                <p className="prizeLabel">{prizeResult.label}</p>
+                <p className="resultNote">
+                  {isWin
+                    ? "Show this screen to a member of the team to claim."
+                    : "Thanks for playing — there'll be more chances by the river."}
+                </p>
+                <button className="btn btnGhost" onClick={resetToStart}>Done</button>
+              </div>
+            </Card>
+          </div>
         </>
       ) : view === "adminLogin" ? (
         <>
-          <div className="logo">Between The Bridges Scratch &amp; Win</div>
-          <div className="subLogo">London Waterloo &middot; Southbank</div>
-          <TicketFrame eyebrow="Control room">
-            <h1 className="headline">Admin login</h1>
-            <p className="sub">Enter the password to view entries and manage events.</p>
-            <form onSubmit={loginAdmin}>
-              <label>Password</label>
-              <input
-                ref={pwInputRef}
-                type="text"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck="false"
-                value={pw}
-                onChange={(e) => setPw(e.target.value)}
-                placeholder="••••••••"
-              />
-              {pwError && <div className="err">{pwError}</div>}
-              <button className="btn" type="submit" onClick={loginAdmin}>
-                Log in
-              </button>
-              <button
-                type="button"
-                className="btn btnGhost"
-                style={{ marginTop: 10 }}
-                onClick={() => setView("entry")}
-              >
-                Back to scratch card
-              </button>
-            </form>
-          </TicketFrame>
+          {Masthead}
+          <div className="stage">
+            <Card eyebrow="Control room">
+              <h1 className="scratchTitle">Back of house</h1>
+              <p className="lede">Password required to see entries and run campaigns.</p>
+              <form onSubmit={loginAdmin}>
+                <label className="field">Password</label>
+                <input ref={pwInputRef} type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" autoComplete="off" autoCapitalize="off" autoCorrect="off" spellCheck="false" />
+                {pwError && <div className="err">{pwError}</div>}
+                <button className="btn" type="submit" onClick={loginAdmin}>Log in</button>
+                <button type="button" className="btn btnGhost" style={{ marginTop: 10 }} onClick={() => setView("entry")}>
+                  Back to the card
+                </button>
+              </form>
+            </Card>
+          </div>
         </>
       ) : (
         <div className="adminWrap">
           <div className="adminHeader">
             <h1>Back of house</h1>
-            <button className="btn btnGhost" style={{ width: "auto", marginTop: 0 }} onClick={() => setView("entry")}>
-              Log out
-            </button>
+            <button className="btn btnGhost btnSmall" onClick={() => setView("entry")}>Log out</button>
           </div>
           <div className="tabs">
-            <button
-              className={"tab " + (adminTab === "entries" ? "active" : "")}
-              onClick={() => setAdminTab("entries")}
-            >
-              Entries
-            </button>
-            <button
-              className={"tab " + (adminTab === "campaigns" ? "active" : "")}
-              onClick={() => setAdminTab("campaigns")}
-            >
-              Events &amp; campaigns
-            </button>
+            <button className={"tab " + (adminTab === "entries" ? "active" : "")} onClick={() => setAdminTab("entries")}>Entries</button>
+            <button className={"tab " + (adminTab === "campaigns" ? "active" : "")} onClick={() => setAdminTab("campaigns")}>Events</button>
           </div>
 
           {adminTab === "entries" ? (
             <div className="panel">
+              <div className="chipRow">
+                <button className={"chip " + (campaignFilter === "all" ? "active" : "")} onClick={() => setCampaignFilter("all")}>
+                  All ({entries.length})
+                </button>
+                {campaigns.map((c) => {
+                  const count = entries.filter((e) => e.campaignId === c.id).length;
+                  return (
+                    <button key={c.id} className={"chip " + (campaignFilter === c.id ? "active" : "")} onClick={() => setCampaignFilter(c.id)}>
+                      {c.code || c.name} ({count})
+                    </button>
+                  );
+                })}
+              </div>
               <div className="toolbar">
-                <select
-                  value={campaignFilter}
-                  onChange={(e) => setCampaignFilter(e.target.value)}
-                  style={{ maxWidth: 260 }}
-                >
-                  <option value="all">All events ({entries.length})</option>
-                  {campaigns.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
                 <label className="checkRow" style={{ marginTop: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={marketingOnly}
-                    onChange={(e) => setMarketingOnly(e.target.checked)}
-                  />
+                  <input type="checkbox" checked={marketingOnly} onChange={(e) => setMarketingOnly(e.target.checked)} />
                   <span>Marketing opt-ins only</span>
                 </label>
-                <button className="btn" style={{ marginTop: 0, width: "auto", padding: "10px 18px" }} onClick={exportCSV}>
-                  Export CSV
-                </button>
+                <button className="btn btnSmall" onClick={exportCSV}>Export CSV</button>
               </div>
               {filteredEntries.length === 0 ? (
                 <div className="empty">No entries yet.</div>
@@ -1379,13 +1161,7 @@ export default function App() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Company</th>
-                      <th>Event</th>
-                      <th>Prize</th>
-                      <th>Marketing</th>
-                      <th>Date</th>
+                      <th>Name</th><th>Email</th><th>Company</th><th>Event</th><th>Prize</th><th>Marketing</th><th>Date</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1395,12 +1171,8 @@ export default function App() {
                         <td>{e.email}</td>
                         <td>{e.company}</td>
                         <td>{e.campaignName}</td>
-                        <td>
-                          <span className={"prizeTag " + (e.prize !== "noWin" ? "p-" + e.prize : "")}>
-                            {PRIZES[e.prize]?.label}
-                          </span>
-                        </td>
-                        <td>{e.marketingConsent ? "✓ Yes" : "—"}</td>
+                        <td><span className={"prizeTag " + (e.prize !== "noWin" ? "win" : "")}>{PRIZES[e.prize]?.label}</span></td>
+                        <td>{e.marketingConsent ? "Yes" : "—"}</td>
                         <td>{fmtDate(e.timestamp)}</td>
                       </tr>
                     ))}
@@ -1411,106 +1183,55 @@ export default function App() {
           ) : (
             <>
               <div className="panel">
-                <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", marginTop: 0 }}>
-                  Published site link
-                </h3>
-                <p className="sub" style={{ marginBottom: 8 }}>
-                  Paste the real public URL you get from "Share" once you publish this app.
-                  This is what individual company links are built from — without it, links
-                  generated below may not open correctly for people outside this chat.
-                </p>
+                <h3>Published site link</h3>
+                <p className="sub">Paste the real public URL you get from "Share" once you publish this app — individual event links are built from it.</p>
                 <form onSubmit={saveBaseUrl}>
-                  <input
-                    type="text"
-                    value={baseUrlInput}
-                    onChange={(e) => setBaseUrlInput(e.target.value)}
-                    placeholder="https://claude.site/artifacts/your-app-id"
-                  />
-                  <button className="btn" type="submit" onClick={saveBaseUrl} style={{ marginTop: 12 }}>
-                    {baseUrlSaved ? "Saved!" : "Save link"}
-                  </button>
-                </form>
-                {!baseUrl && (
-                  <p className="hint" style={{ marginTop: 12 }}>
-                    Not set yet — individual links currently fall back to this preview's
-                    address, which won't work once shared outside this chat.
-                  </p>
-                )}
-              </div>
-              <div className="panel">
-                <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", marginTop: 0 }}>
-                  Set up a new event or company batch
-                </h3>
-                <p className="sub" style={{ marginBottom: 8 }}>
-                  Set the total card limit and how many of each prize to give away —
-                  the rest are automatically non-winners. Use this on the spot at a
-                  pop-up, or ahead of time for a company email batch (e.g. 600 cards).
-                </p>
-                <form onSubmit={createCampaign}>
-                  <label>Event or company name</label>
-                  <input
-                    type="text"
-                    value={newCampaign.name}
-                    onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })}
-                    placeholder="Acme Corp — Summer Launch"
-                  />
-                  <div className="grid2">
-                    <div>
-                      <label>Total scratch cards (cap)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={newCampaign.cap}
-                        onChange={(e) => setNewCampaign({ ...newCampaign, cap: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label>Free drink winners</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={newCampaign.drink}
-                        onChange={(e) => setNewCampaign({ ...newCampaign, drink: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label>2 event ticket winners</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={newCampaign.tickets}
-                        onChange={(e) => setNewCampaign({ ...newCampaign, tickets: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label>Photobooth winners</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={newCampaign.photobooth}
-                        onChange={(e) => setNewCampaign({ ...newCampaign, photobooth: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label>Expiry date (optional)</label>
-                      <input
-                        type="date"
-                        value={newCampaign.expiresAt}
-                        onChange={(e) => setNewCampaign({ ...newCampaign, expiresAt: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  {campaignError && <div className="err">{campaignError}</div>}
-                  <button className="btn" type="submit" onClick={createCampaign}>
-                    Create event
-                  </button>
+                  <input type="text" value={baseUrlInput} onChange={(e) => setBaseUrlInput(e.target.value)} placeholder="https://claude.site/artifacts/your-app-id" />
+                  <button className="btn btnSmall" type="submit" style={{ marginTop: 12 }}>{baseUrlSaved ? "Saved!" : "Save link"}</button>
                 </form>
               </div>
 
               <div className="panel">
-                <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", marginTop: 0 }}>
-                  Live &amp; past events
-                </h3>
+                <h3>New event or company batch</h3>
+                <p className="sub">Set the total card limit and how many of each prize to give away — everything else is a non-winner.</p>
+                <form onSubmit={createCampaign}>
+                  <div className="grid">
+                    <div>
+                      <label className="field">Event name</label>
+                      <input type="text" value={newCampaign.name} onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })} placeholder="Acme Corp — Summer Launch" />
+                    </div>
+                    <div>
+                      <label className="field">Entry code</label>
+                      <input className="codeInput" type="text" value={newCampaign.code} onChange={(e) => setNewCampaign({ ...newCampaign, code: e.target.value })} placeholder="ACME2026" />
+                    </div>
+                    <div>
+                      <label className="field">Total cards</label>
+                      <input type="number" min="1" value={newCampaign.cap} onChange={(e) => setNewCampaign({ ...newCampaign, cap: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="field">Free drinks</label>
+                      <input type="number" min="0" value={newCampaign.drink} onChange={(e) => setNewCampaign({ ...newCampaign, drink: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="field">Ticket pairs</label>
+                      <input type="number" min="0" value={newCampaign.tickets} onChange={(e) => setNewCampaign({ ...newCampaign, tickets: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="field">Photobooth</label>
+                      <input type="number" min="0" value={newCampaign.photobooth} onChange={(e) => setNewCampaign({ ...newCampaign, photobooth: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="field">Expiry date (optional)</label>
+                      <input type="date" value={newCampaign.expiresAt} onChange={(e) => setNewCampaign({ ...newCampaign, expiresAt: e.target.value })} />
+                    </div>
+                  </div>
+                  {campaignError && <div className="err">{campaignError}</div>}
+                  <button className="btn btnSmall" type="submit" style={{ marginTop: 18 }}>Create event</button>
+                </form>
+              </div>
+
+              <div className="panel">
+                <h3>Live &amp; past events</h3>
                 {campaigns.length === 0 ? (
                   <div className="empty">No events yet — create one above.</div>
                 ) : (
@@ -1521,57 +1242,106 @@ export default function App() {
                     const full = c.usedCount >= c.cap;
                     return (
                       <div className="campaignCard" key={c.id}>
-                        <div className="campaignCardHead">
-                          <h3>
-                            {c.name}{" "}
-                            <span className={"statusTag " + (expired || full ? "closed" : "open")}>
+                        <div className="campaignHead">
+                          <h4>{c.name}</h4>
+                          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                            <span className={"statusTag " + (expired || full ? "closed" : "")}>
                               {expired ? "Expired" : full ? "Full" : "Live"}
                             </span>
-                          </h3>
-                          <button
-                            type="button"
-                            className="btn btnGhost btnSmall"
-                            onClick={() => copyLink(c.id)}
-                          >
-                            {copiedId === c.id ? "Copied!" : "Copy link"}
-                          </button>
+                            <button type="button" className="btn btnGhost btnSmall" onClick={() => copyLink(c.id)}>
+                              {copiedId === c.id ? "Copied!" : "Copy link"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btnGhost btnSmall"
+                              onClick={() => (editingId === c.id ? setEditingId(null) : startEdit(c))}
+                            >
+                              {editingId === c.id ? "Cancel" : "Edit"}
+                            </button>
+                          </div>
                         </div>
-                        {c.expiresAt && (
-                          <p className="hint" style={{ margin: "0 0 6px", textAlign: "left" }}>
-                            {expired ? "Expired" : "Expires"} {fmtDate(c.expiresAt)}
-                          </p>
+                        <p className="meta">
+                          Code <b>{c.code}</b> · {c.usedCount} of {c.cap} cards used
+                          {c.expiresAt ? ` · ${expired ? "Expired" : "Expires"} ${fmtDate(c.expiresAt)}` : ""}
+                        </p>
+                        <div className="barOuter"><div className="barInner" style={{ width: pct + "%" }} /></div>
+                        <p className="meta" style={{ marginBottom: 0 }}>
+                          Drinks {won.drink}/{c.counts.drink} · Tickets {won.tickets}/{c.counts.tickets} · Photobooth {won.photobooth}/{c.counts.photobooth}
+                        </p>
+                        {editingId === c.id ? (
+                          <form onSubmit={(e) => saveEdit(e, c.id)} style={{ marginTop: 14 }}>
+                            <p className="hint" style={{ margin: "0 0 10px" }}>
+                              {c.usedCount} card{c.usedCount === 1 ? "" : "s"} already scratched — those results
+                              stay as they are. This only changes what's left.
+                            </p>
+                            <div className="grid">
+                              <div>
+                                <label className="field">Total cards</label>
+                                <input
+                                  type="number"
+                                  min={c.usedCount}
+                                  value={editForm.cap}
+                                  onChange={(e) => setEditForm({ ...editForm, cap: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <label className="field">Free drinks</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={editForm.drink}
+                                  onChange={(e) => setEditForm({ ...editForm, drink: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <label className="field">Ticket pairs</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={editForm.tickets}
+                                  onChange={(e) => setEditForm({ ...editForm, tickets: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <label className="field">Photobooth</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={editForm.photobooth}
+                                  onChange={(e) => setEditForm({ ...editForm, photobooth: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <label className="field">Expiry date (optional)</label>
+                                <input
+                                  type="date"
+                                  value={editForm.expiresAt}
+                                  onChange={(e) => setEditForm({ ...editForm, expiresAt: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                            {editError && <div className="err">{editError}</div>}
+                            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                              <button className="btn btnSmall" type="submit" onClick={(e) => saveEdit(e, c.id)}>
+                                Save changes
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btnGhost btnSmall"
+                                onClick={() => setEditingId(null)}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <>
+                            <input className="linkPreview" readOnly value={campaignLink(c.id)} onFocus={(e) => e.target.select()} />
+                            {copiedId === c.id + ":manual" && (
+                              <p className="hint">Couldn't auto-copy — tap the link field to select it, then copy manually.</p>
+                            )}
+                          </>
                         )}
-                        <input
-                          className="linkPreview"
-                          readOnly
-                          value={campaignLink(c.id)}
-                          onFocus={(e) => e.target.select()}
-                        />
-                        {copiedId === c.id + ":manual" && (
-                          <p className="hint" style={{ margin: "0 0 10px" }}>
-                            Couldn't auto-copy — tap the link field above to select it, then copy manually.
-                          </p>
-                        )}
-                        <div className="statRow">
-                          <span>
-                            Cards used: <b>{c.usedCount} / {c.cap}</b>
-                          </span>
-                          <span>
-                            🍹 <b>{won.drink} / {c.counts.drink}</b>
-                          </span>
-                          <span>
-                            🎟️ <b>{won.tickets} / {c.counts.tickets}</b>
-                          </span>
-                          <span>
-                            📸 <b>{won.photobooth} / {c.counts.photobooth}</b>
-                          </span>
-                          <span>
-                            No win remaining: <b>{c.cap - c.counts.drink - c.counts.tickets - c.counts.photobooth - won.noWin}</b>
-                          </span>
-                        </div>
-                        <div className="barOuter">
-                          <div className="barInner" style={{ width: pct + "%" }} />
-                        </div>
                       </div>
                     );
                   })
@@ -1581,7 +1351,6 @@ export default function App() {
           )}
         </div>
       )}
-      </div>
     </div>
   );
 }
