@@ -5,12 +5,13 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
    Waterloo / Southbank · dancing, music, riverside events
 --------------------------------------------------------- */
 const PRIZES = {
-  drink: { label: "A free drink", icon: "stein" },
-  tickets: { label: "2 tickets to a show", icon: "ticket" },
-  photobooth: { label: "A free photobooth session", icon: "camera" },
+  dj: { label: "A complimentary DJ set", icon: "dj" },
+  tickets: { label: "2 pairs of event tickets", icon: "ticket" },
+  photobooth: { label: "A complimentary photobooth session", icon: "camera" },
+  chocolate: { label: "A box of chocolates", icon: "chocolate" },
   noWin: { label: "No luck this time", icon: "cross" },
 };
-const PRIZE_ORDER = ["drink", "tickets", "photobooth"];
+const PRIZE_ORDER = ["dj", "tickets", "photobooth", "chocolate"];
 const PRIZE_ICON_LIST = PRIZE_ORDER.map((k) => PRIZES[k].icon);
 const DECORATIVE_ICONS = ["disco", "note", "cocktail", "speaker", "mic", "wheel", "bolt"];
 const ADMIN_PASSWORD = "promo2026";
@@ -44,7 +45,7 @@ function isLive(c) {
 }
 
 function wonSoFar(campaign) {
-  const tally = { drink: 0, tickets: 0, photobooth: 0, noWin: 0 };
+  const tally = { dj: 0, tickets: 0, photobooth: 0, chocolate: 0, noWin: 0 };
   (campaign.queue || []).slice(0, campaign.usedCount).forEach((k) => {
     tally[k] = (tally[k] || 0) + 1;
   });
@@ -190,6 +191,21 @@ function GridIcon({ name, size = 46 }) {
       return (
         <svg {...common} stroke={grey}>
           <path d="M12 12l16 16M28 12L12 28" />
+        </svg>
+      );
+    case "dj":
+      return (
+        <svg {...common} stroke={cyan}>
+          <path d="M10 20a10 10 0 0 1 20 0" />
+          <rect x="6" y="19" width="7" height="11" rx="3" />
+          <rect x="27" y="19" width="7" height="11" rx="3" />
+        </svg>
+      );
+    case "chocolate":
+      return (
+        <svg {...common} stroke={gold}>
+          <rect x="6" y="10" width="28" height="20" rx="2" />
+          <path d="M13 10v20M20 10v20M27 10v20M6 20h28" />
         </svg>
       );
     default:
@@ -414,14 +430,15 @@ export default function App() {
     name: "",
     code: "",
     cap: 100,
-    drink: 10,
+    dj: 10,
     tickets: 5,
     photobooth: 5,
+    chocolate: 5,
     expiresAt: "",
   });
   const [campaignError, setCampaignError] = useState("");
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ cap: "", drink: "", tickets: "", photobooth: "", expiresAt: "" });
+  const [editForm, setEditForm] = useState({ cap: "", dj: "", tickets: "", photobooth: "", chocolate: "", expiresAt: "" });
   const [editError, setEditError] = useState("");
   const [campaignFilter, setCampaignFilter] = useState("all");
   const [marketingOnly, setMarketingOnly] = useState(false);
@@ -608,9 +625,10 @@ export default function App() {
     if (e && e.preventDefault) e.preventDefault();
     setCampaignError("");
     const cap = parseInt(newCampaign.cap, 10);
-    const drink = parseInt(newCampaign.drink, 10) || 0;
+    const dj = parseInt(newCampaign.dj, 10) || 0;
     const tickets = parseInt(newCampaign.tickets, 10) || 0;
     const photobooth = parseInt(newCampaign.photobooth, 10) || 0;
+    const chocolate = parseInt(newCampaign.chocolate, 10) || 0;
     if (!newCampaign.name.trim()) {
       setCampaignError("Give this event or company a name.");
       return;
@@ -632,7 +650,7 @@ export default function App() {
       setCampaignError("Card limit must be at least 1.");
       return;
     }
-    if (drink + tickets + photobooth > cap) {
+    if (dj + tickets + photobooth + chocolate > cap) {
       setCampaignError("Winners can't add up to more than the card limit.");
       return;
     }
@@ -649,7 +667,7 @@ export default function App() {
       }
       expiresAt = d.getTime();
     }
-    const counts = { drink, tickets, photobooth };
+    const counts = { dj, tickets, photobooth, chocolate };
     const campaign = {
       id: Date.now().toString() + Math.floor(Math.random() * 1000),
       name: newCampaign.name.trim(),
@@ -669,7 +687,7 @@ export default function App() {
       return;
     }
     setCampaigns(updated);
-    setNewCampaign({ name: "", code: "", cap: 100, drink: 10, tickets: 5, photobooth: 5, expiresAt: "" });
+    setNewCampaign({ name: "", code: "", cap: 100, dj: 10, tickets: 5, photobooth: 5, chocolate: 5, expiresAt: "" });
   }
 
   function startEdit(c) {
@@ -677,9 +695,10 @@ export default function App() {
     setEditError("");
     setEditForm({
       cap: c.cap,
-      drink: c.counts.drink,
+      dj: c.counts.dj,
       tickets: c.counts.tickets,
       photobooth: c.counts.photobooth,
+      chocolate: c.counts.chocolate,
       expiresAt: c.expiresAt ? new Date(c.expiresAt).toISOString().slice(0, 10) : "",
     });
   }
@@ -691,9 +710,10 @@ export default function App() {
     if (!campaign) return;
 
     const newCap = parseInt(editForm.cap, 10);
-    const drink = parseInt(editForm.drink, 10) || 0;
+    const dj = parseInt(editForm.dj, 10) || 0;
     const tickets = parseInt(editForm.tickets, 10) || 0;
     const photobooth = parseInt(editForm.photobooth, 10) || 0;
+    const chocolate = parseInt(editForm.chocolate, 10) || 0;
 
     if (!newCap || newCap < 1) {
       setEditError("Card limit must be at least 1.");
@@ -705,7 +725,7 @@ export default function App() {
       );
       return;
     }
-    if (drink + tickets + photobooth > newCap) {
+    if (dj + tickets + photobooth + chocolate > newCap) {
       setEditError("Winners can't add up to more than the new card limit.");
       return;
     }
@@ -725,11 +745,12 @@ export default function App() {
     const already = wonSoFar(campaign);
     const remainingSlots = newCap - campaign.usedCount;
     const remainingCounts = {
-      drink: Math.max(drink - already.drink, 0),
+      dj: Math.max(dj - already.dj, 0),
       tickets: Math.max(tickets - already.tickets, 0),
       photobooth: Math.max(photobooth - already.photobooth, 0),
+      chocolate: Math.max(chocolate - already.chocolate, 0),
     };
-    const remainingTotal = remainingCounts.drink + remainingCounts.tickets + remainingCounts.photobooth;
+    const remainingTotal = remainingCounts.dj + remainingCounts.tickets + remainingCounts.photobooth + remainingCounts.chocolate;
     if (remainingTotal > remainingSlots) {
       setEditError(
         "Not enough cards left to fit those winner counts alongside what's already been given out."
@@ -744,7 +765,7 @@ export default function App() {
     const updatedCampaign = {
       ...campaign,
       cap: newCap,
-      counts: { drink, tickets, photobooth },
+      counts: { dj, tickets, photobooth, chocolate },
       queue: newQueue,
       expiresAt,
     };
@@ -833,7 +854,7 @@ export default function App() {
             radial-gradient(circle at 86% 14%, rgba(0,229,208,0.26), transparent 46%),
             radial-gradient(circle at 50% 102%, rgba(255,197,49,0.22), transparent 55%);
           font-family: 'Space Grotesk', sans-serif;
-          color: #F3EDE4;
+          color: #F3EDM4;
           padding-bottom: 150px;
         }
         .app a { color: #00E5D0; text-decoration: none; }
@@ -1209,8 +1230,8 @@ export default function App() {
                       <input type="number" min="1" value={newCampaign.cap} onChange={(e) => setNewCampaign({ ...newCampaign, cap: e.target.value })} />
                     </div>
                     <div>
-                      <label className="field">Free drinks</label>
-                      <input type="number" min="0" value={newCampaign.drink} onChange={(e) => setNewCampaign({ ...newCampaign, drink: e.target.value })} />
+                      <label className="field">Comp DJ sets</label>
+                      <input type="number" min="0" value={newCampaign.dj} onChange={(e) => setNewCampaign({ ...newCampaign, dj: e.target.value })} />
                     </div>
                     <div>
                       <label className="field">Ticket pairs</label>
@@ -1219,6 +1240,10 @@ export default function App() {
                     <div>
                       <label className="field">Photobooth</label>
                       <input type="number" min="0" value={newCampaign.photobooth} onChange={(e) => setNewCampaign({ ...newCampaign, photobooth: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="field">Chocolate</label>
+                      <input type="number" min="0" value={newCampaign.chocolate} onChange={(e) => setNewCampaign({ ...newCampaign, chocolate: e.target.value })} />
                     </div>
                     <div>
                       <label className="field">Expiry date (optional)</label>
@@ -1266,7 +1291,7 @@ export default function App() {
                         </p>
                         <div className="barOuter"><div className="barInner" style={{ width: pct + "%" }} /></div>
                         <p className="meta" style={{ marginBottom: 0 }}>
-                          Drinks {won.drink}/{c.counts.drink} · Tickets {won.tickets}/{c.counts.tickets} · Photobooth {won.photobooth}/{c.counts.photobooth}
+                          DJ {won.dj}/{c.counts.dj} · Tickets {won.tickets}/{c.counts.tickets} · Photobooth {won.photobooth}/{c.counts.photobooth} · Chocolate {won.chocolate}/{c.counts.chocolate}
                         </p>
                         {editingId === c.id ? (
                           <form onSubmit={(e) => saveEdit(e, c.id)} style={{ marginTop: 14 }}>
@@ -1285,12 +1310,12 @@ export default function App() {
                                 />
                               </div>
                               <div>
-                                <label className="field">Free drinks</label>
+                                <label className="field">Comp DJ sets</label>
                                 <input
                                   type="number"
                                   min="0"
-                                  value={editForm.drink}
-                                  onChange={(e) => setEditForm({ ...editForm, drink: e.target.value })}
+                                  value={editForm.dj}
+                                  onChange={(e) => setEditForm({ ...editForm, dj: e.target.value })}
                                 />
                               </div>
                               <div>
@@ -1309,6 +1334,15 @@ export default function App() {
                                   min="0"
                                   value={editForm.photobooth}
                                   onChange={(e) => setEditForm({ ...editForm, photobooth: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <label className="field">Chocolate</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={editForm.chocolate}
+                                  onChange={(e) => setEditForm({ ...editForm, chocolate: e.target.value })}
                                 />
                               </div>
                               <div>
@@ -1354,3 +1388,4 @@ export default function App() {
     </div>
   );
 }
+
