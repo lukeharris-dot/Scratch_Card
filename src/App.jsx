@@ -541,7 +541,7 @@ export default function App() {
   async function submitEntry(e) {
     if (e && e.preventDefault) e.preventDefault();
     setFormError("");
-    if (!form.name.trim() || !form.email.trim() || !form.company.trim()) {
+    if (!form.name.trim() || !form.email.trim() || (!urlEventId && !form.company.trim())) {
       setFormError("Please fill in every field.");
       return;
     }
@@ -592,7 +592,7 @@ export default function App() {
       id: Date.now().toString() + Math.floor(Math.random() * 1000),
       name: form.name.trim(),
       email: form.email.trim(),
-      company: form.company.trim(),
+      company: urlEventId ? campaign.name : form.company.trim(),
       campaignId: campaign.id,
       campaignName: campaign.name,
       prize: prizeKey,
@@ -854,7 +854,7 @@ export default function App() {
             radial-gradient(circle at 86% 14%, rgba(0,229,208,0.26), transparent 46%),
             radial-gradient(circle at 50% 102%, rgba(255,197,49,0.22), transparent 55%);
           font-family: 'Space Grotesk', sans-serif;
-          color: #F3EDM4;
+          color: #F3EDE4;
           padding-bottom: 150px;
         }
         .app a { color: #00E5D0; text-decoration: none; }
@@ -1000,8 +1000,9 @@ export default function App() {
         .chip.active { border-color: #FFC531; background: #FFC531; color: #0B0714; font-weight: 700; }
         .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
         .app table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .app th { text-align: left; font-family: 'Space Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #7E75A0; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.1); }
-        .app td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.06); }
+        .app th { text-align: left; font-family: 'Space Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #A79BC4; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.15); }
+        .app td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.08); color: #F3EDE4; }
+        .app tbody tr:nth-child(odd) { background: rgba(255,255,255,.03); }
         .prizeTag { font-family: 'Space Mono', monospace; font-size: 11px; padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,.07); color: #7E75A0; display: inline-block; }
         .prizeTag.win { background: rgba(255,197,49,.18); color: #FFC531; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
@@ -1050,8 +1051,12 @@ export default function App() {
                 <label className="field">Email</label>
                 <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="jordan@company.com" />
 
-                <label className="field">Company</label>
-                <input type="text" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Acme Corp" />
+                {!urlEventId && (
+                  <>
+                    <label className="field">Company</label>
+                    <input type="text" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Acme Corp" />
+                  </>
+                )}
 
                 {urlEventId ? (
                   lockedCampaign && isLive(lockedCampaign) ? (
@@ -1388,4 +1393,5 @@ export default function App() {
     </div>
   );
 }
+
 
