@@ -8,7 +8,7 @@ const PRIZES = {
   dj: { label: "A complimentary DJ set", icon: "dj" },
   tickets: { label: "2 pairs of event tickets", icon: "ticket" },
   photobooth: { label: "A complimentary photobooth session", icon: "camera" },
-  chocolate: { label: "A box of chocolates", icon: "chocolate" },
+  chocolate: { label: "A sweet treat", icon: "chocolate" },
   noWin: { label: "No luck this time", icon: "cross" },
 };
 const PRIZE_ORDER = ["dj", "tickets", "photobooth", "chocolate"];
