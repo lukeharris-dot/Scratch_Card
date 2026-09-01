@@ -616,7 +616,7 @@ export default function App() {
   }
 
   function resetToStart() {
-    setForm({ name: "", email: "", company: "", campaignId: "", code: "", marketingConsent: false });
+    setForm({ name: "", email: "", company: "", campaignId: urlEventId, code: "", marketingConsent: false });
     setCurrentEntry(null);
     setView("entry");
   }
@@ -805,7 +805,7 @@ export default function App() {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
-    const sel = campaignFilter !== "all" ? campaigns.find((c) => c.id === campaignFilter) : null;
+    const sel = campaignFilter !== "all" ? campaigs.find((c) => c.id === campaignFilter) : null;
     const suffix = sel ? "-" + (sel.code || sel.name).replace(/[^a-z0-9]+/gi, "-").toLowerCase() : "";
     a.download = `scratch-card-entries${suffix}.csv`;
     document.body.appendChild(a);
@@ -1393,5 +1393,6 @@ export default function App() {
     </div>
   );
 }
+
 
 
